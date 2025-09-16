@@ -2,8 +2,8 @@ const Gig = require("../Models/gigModel");
 const Role = require("../Models/roleModel");
 const Application = require("../Models/applicationModel");
 const catchAsync = require("../Utils/catchAsync");
-const Company = require("../Models/companyModel");
-const Drug = require("../Models/drugModel");
+const Company = require("../Models/CompanyModel");
+const Drug = require("../Models/DrugModel");
 const User = require("../Models/userModel");
 
 exports.find = catchAsync(async (req, res, next) => {
