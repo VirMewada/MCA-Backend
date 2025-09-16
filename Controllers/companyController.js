@@ -3,7 +3,7 @@ const Role = require("../Models/roleModel");
 const Application = require("../Models/applicationModel");
 const catchAsync = require("../Utils/catchAsync");
 const Company = require("../Models/companyModel");
-const Drug = require("../Models/DrugModel");
+const Drug = require("../Models/drugModel");
 const User = require("../Models/userModel");
 
 exports.find = catchAsync(async (req, res, next) => {
