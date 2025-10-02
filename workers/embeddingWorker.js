@@ -1,75 +1,75 @@
-const { Worker } = require("bullmq");
-const Redis = require("ioredis");
-const fs = require("fs/promises");
-const path = require("path");
-const fetch = require("node-fetch");
-
-// const { getImageVector } = require("../utils/imageEmbedding"); // adjust path
-const { runFaiss } = require("../services/faissService");
-const userImageEmbedding = require("../Models/userImageEmbeddingModel.js");
-const User = require("../Models/userModel.js");
-const { getImageVector } = require("../services/imageVectorizer.js");
-
-const dotenv = require("dotenv");
-// dotenv.config({ path: "../config.env" });
-
+// const { Worker } = require("bullmq");
+// const Redis = require("ioredis");
+// const fs = require("fs/promises");
 // const path = require("path");
+// const fetch = require("node-fetch");
+
+// // const { getImageVector } = require("../utils/imageEmbedding"); // adjust path
+// const { runFaiss } = require("../services/faissService");
+// const userImageEmbedding = require("../Models/userImageEmbeddingModel.js");
+// const User = require("../Models/userModel.js");
+// const { getImageVector } = require("../services/imageVectorizer.js");
+
 // const dotenv = require("dotenv");
+// // dotenv.config({ path: "../config.env" });
 
-dotenv.config({ path: path.resolve(__dirname, "../config.env") });
-console.log("DATABASE URI:", process.env.DATABASE);
+// // const path = require("path");
+// // const dotenv = require("dotenv");
 
-const mongoose = require("mongoose");
+// dotenv.config({ path: path.resolve(__dirname, "../config.env") });
+// console.log("DATABASE URI:", process.env.DATABASE);
 
-mongoose
-  .connect(process.env.DATABASE, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Worker connected to MongoDB"))
-  .catch((err) =>
-    console.error("❌ Worker failed to connect to MongoDB:", err)
-  );
+// const mongoose = require("mongoose");
 
-// const connection = new Redis();
-const connection = new Redis({
-  maxRetriesPerRequest: null,
-});
+// mongoose
+//   .connect(process.env.DATABASE, {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+//   })
+//   .then(() => console.log("✅ Worker connected to MongoDB"))
+//   .catch((err) =>
+//     console.error("❌ Worker failed to connect to MongoDB:", err)
+//   );
 
-const worker = new Worker(
-  "embedding-queue",
-  async (job) => {
-    const { imageUrl, userId } = job.data;
+// // const connection = new Redis();
+// const connection = new Redis({
+//   maxRetriesPerRequest: null,
+// });
 
-    console.log("Worker started job for user:", userId);
+// const worker = new Worker(
+//   "embedding-queue",
+//   async (job) => {
+//     const { imageUrl, userId } = job.data;
 
-    const tempImagePath = `/tmp/${Date.now()}.jpg`;
-    const response = await fetch(imageUrl);
-    const buffer = await response.buffer();
-    await fs.writeFile(tempImagePath, buffer);
+//     console.log("Worker started job for user:", userId);
 
-    const imageVector = await getImageVector(tempImagePath);
-    await fs.unlink(tempImagePath);
+//     const tempImagePath = `/tmp/${Date.now()}.jpg`;
+//     const response = await fetch(imageUrl);
+//     const buffer = await response.buffer();
+//     await fs.writeFile(tempImagePath, buffer);
 
-    console.log("Vectorization done");
+//     const imageVector = await getImageVector(tempImagePath);
+//     await fs.unlink(tempImagePath);
 
-    await userImageEmbedding.findOneAndUpdate(
-      { user: userId },
-      { embedding: imageVector },
-      { upsert: true, new: true }
-    );
+//     console.log("Vectorization done");
 
-    await runFaiss("add", imageVector, userId);
+//     await userImageEmbedding.findOneAndUpdate(
+//       { user: userId },
+//       { embedding: imageVector },
+//       { upsert: true, new: true }
+//     );
 
-    return true;
-  },
-  { connection }
-);
+//     await runFaiss("add", imageVector, userId);
 
-worker.on("completed", (job) => {
-  console.log(`✅ Job ${job.id} completed`);
-});
+//     return true;
+//   },
+//   { connection }
+// );
 
-worker.on("failed", (job, err) => {
-  console.error(`❌ Job ${job.id} failed:`, err.message);
-});
+// worker.on("completed", (job) => {
+//   console.log(`✅ Job ${job.id} completed`);
+// });
+
+// worker.on("failed", (job, err) => {
+//   console.error(`❌ Job ${job.id} failed:`, err.message);
+// });
