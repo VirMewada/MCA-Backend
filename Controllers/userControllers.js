@@ -174,7 +174,7 @@ const {
   generateSignedUrl,
   deleteFile,
 } = require("../Utils/wasabiHelper.js");
-const embeddingQueue = require("../queues/embeddingQueue.js");
+// const embeddingQueue = require("../queues/embeddingQueue.js");
 
 // Method to handle user updates
 exports.updateMe = [
@@ -362,24 +362,24 @@ exports.updateMy = [
         // } else {
         //   console.log("Casting role detected — skipping vectorization.");
         // }
-        if (isActor) {
-          console.log("Queuing embedding job...");
+        // if (isActor) {
+        //   console.log("Queuing embedding job...");
 
-          await embeddingQueue.add(
-            "generate-embedding",
-            {
-              imageUrl: absUrl, // public image URL
-              userId: req.body.id,
-            },
-            {
-              removeOnComplete: true,
-              attempts: 3,
-              backoff: { type: "exponential", delay: 3000 },
-            }
-          );
+        //   await embeddingQueue.add(
+        //     "generate-embedding",
+        //     {
+        //       imageUrl: absUrl, // public image URL
+        //       userId: req.body.id,
+        //     },
+        //     {
+        //       removeOnComplete: true,
+        //       attempts: 3,
+        //       backoff: { type: "exponential", delay: 3000 },
+        //     }
+        //   );
 
-          console.log("Job queued!");
-        }
+        //   console.log("Job queued!");
+        // }
 
         // Update user profile in the database
         user = await User.findByIdAndUpdate(
