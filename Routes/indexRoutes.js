@@ -16,6 +16,11 @@ const pushTokenController = require("../Controllers/pushTokenController.js");
 const verificationController = require("../Controllers/verificationController.js");
 const userImageEmbeddingController = require("../Controllers/userImageEmbeddingController.js");
 const companyController = require("../Controllers/companyController.js");
+const partController = require("../Controllers/partController.js");
+const itemController = require("../Controllers/itemController.js");
+const vendorController = require("../Controllers/vendorController.js");
+const POController = require("../Controllers/POController.js");
+
 const { generateSignedUrl } = require("../Utils/wasabiHelper.js");
 
 const router = express.Router();
@@ -91,15 +96,58 @@ router.get("/company/allDrugs/:drug", companyController.findAllDrugs);
 router.get("/getCompanies/:userId", companyController.getCompanies);
 router.post("/company", companyController.store);
 
-// router.get("/review", reviewController.index);
-// router.get("/review/:id", reviewController.find);
-// router.post("/review", reviewController.store);
-// router.patch("/review/:id", reviewController.update);
-// router.delete("/review/:id?", reviewController.delete);
+router.get("/parts", partController.index);
+router.get("/parts/:id", partController.find);
+router.post("/parts", partController.store);
+router.patch("/parts/:id", partController.update);
+router.delete("/parts/:id", partController.delete);
+
+// 🔹 Search
+router.get("/items/search", itemController.search);
+router.get("/items/search/PO", itemController.searchPO);
+router.patch("/items/bulk-update", itemController.bulkUpdate);
+router.post("/items/transaction", itemController.transaction);
+router.get("/items/people", itemController.getPeople);
+router.get("/items/transactions", itemController.getTransactionsByItem);
+
+// 🔹 Basic CRUD
+router.get("/items", itemController.index);
+router.get("/items/:id", itemController.find);
+router.post("/items", itemController.store);
+router.patch("/items/:id", itemController.update);
+router.delete("/items/:id", itemController.delete);
+// 🔹 BOM
+router.patch("/items/:id/children", itemController.addChildren);
+router.get("/items/:id/bom", itemController.getBOM);
+// 🔹 Costing
+router.post("/items/:id/recalculate-cost", itemController.recalculateCost);
+
+// 🔹 Mapping (Vendor ↔ Item)
+router.get("/vendors/search", vendorController.search);
+
+router.post("/vendors/map-item", vendorController.mapVendorToItem);
+router.patch("/vendors/update-item", vendorController.updateVendorItem);
+router.post("/vendors/remove-item", vendorController.removeVendorFromItem);
+
+// 🔹 Basic CRUD
+router.get("/vendors", vendorController.index);
+router.get("/vendors/:id", vendorController.find);
+router.post("/vendors", vendorController.store);
+router.patch("/vendors/:id", vendorController.update);
+router.delete("/vendors/:id", vendorController.delete);
 
 router.patch("/verification", verificationController.store);
 router.get("/verification", verificationController.index);
 router.patch("/verificationStatus", verificationController.update);
+
+//PO
+router.post("/po", POController.create);
+router.get("/po", POController.index);
+router.get("/po/:id", POController.show);
+router.put("/po/:id", POController.update);
+router.patch("/po/:id/status", POController.updateStatus);
+router.delete("/po/:id", POController.remove);
+router.patch("/po/:id/movement", POController.addMovement);
 
 // router.post(
 //   "/userImageEmbedding",

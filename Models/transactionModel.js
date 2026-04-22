@@ -1,16 +1,35 @@
 const mongoose = require("mongoose");
-const TxQuery = require("../txQuery");
 
-const structure = {
-  user: {type: mongoose.Schema.Types.ObjectId, ref:'User'},
-  titles: [String],
-  amount: String,
-  positive: Boolean,
-  createdAt: Number,
-}
+const TransactionSchema = new mongoose.Schema(
+  {
+    item_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Item",
+      required: true,
+    },
 
-const schema = new mongoose.Schema(structure);
-const model = mongoose.model("Transaction", schema);
-TxQuery.model("Transaction", model, structure);
+    type: {
+      type: String,
+      enum: ["issue", "receive"],
+      required: true,
+    },
 
-module.exports = model;
+    quantity: {
+      type: Number,
+      required: true,
+    },
+
+    person_name: {
+      type: String,
+      trim: true,
+    },
+
+    note: {
+      type: String,
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Transaction", TransactionSchema);
