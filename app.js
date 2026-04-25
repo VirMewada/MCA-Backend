@@ -31,15 +31,28 @@ const app = express();
 //   next();
 // });
 
+// app.use((req, res, next) => {
+//   res.setHeader(
+//     "Content-Security-Policy",
+//     [
+//       "default-src 'self'",
+//       "connect-src *",
+//       "script-src 'self'",
+//       "style-src 'self' 'unsafe-inline'",
+//       "img-src 'self' data: blob: https://app-media.s3.ap-southeast-1.wasabisys.com",
+//     ].join("; ")
+//   );
+//   next();
+// });
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
     [
-      "default-src 'self'",
+      "default-src *",
       "connect-src *",
-      "script-src 'self'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://app-media.s3.ap-southeast-1.wasabisys.com",
+      "script-src * 'unsafe-inline' 'unsafe-eval'",
+      "style-src * 'unsafe-inline'",
+      "img-src * data: blob:",
     ].join("; ")
   );
   next();
