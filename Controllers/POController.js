@@ -247,7 +247,7 @@ exports.updateStatus = catchAsync(async (req, res) => {
 
         item.in_machining -= quantity;
         item.in_house += quantity;
-        item.received_quantity += quantity;
+        // item.received_quantity += quantity;
       }
 
       // 🔥 SEND FOR TESTING (random qty)
@@ -304,6 +304,8 @@ exports.updateStatus = catchAsync(async (req, res) => {
   // ============================
 
   if (status === "completed") {
+    console.log("Checking if all items received before closing PO", po.items);
+
     const allReceived = po.items.every(
       (i) => i.received_quantity === i.quantity
     );
@@ -410,5 +412,172 @@ exports.addMovement = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     data: { po },
+  });
+});
+
+exports.search = catchAsync(async (req, res) => {
+  const { search = "", status = "all", type = "all" } = req.query;
+
+  let query = {
+    is_deleted: false,
+  };
+
+  // 🔥 STATUS FILTER
+  if (status !== "all") {
+    query.status = status;
+  }
+
+  // =========================
+  // 🔍 BUILD SEARCH CONDITIONS
+  // =========================
+  let searchConditions = [];
+
+  if (search.trim()) {
+    const regex = new RegExp(search, "i");
+
+    searchConditions = [
+      { po_number: regex }, // 🔥 PO number search
+    ];
+  }
+
+  // =========================
+  // 🔍 MAIN QUERY
+  // =========================
+  // let pos = await PO.find(
+  //   searchConditions.length ? { ...query, $or: searchConditions } : query
+  // )
+  //   .populate("vendor_id", "name phone")
+  //   .populate("items.item_id", "name code unit")
+  //   .sort({ createdAt: -1 });
+  let pos = await PO.find(query)
+    .populate("vendor_id", "name phone")
+    .populate("items.item_id", "name code unit")
+    .sort({ createdAt: -1 });
+
+  // =========================
+  // 🔥 ADVANCED FILTERING (post-populate)
+  // =========================
+  if (search.trim()) {
+    const lower = search.toLowerCase();
+
+    pos = pos.filter((po) => {
+      const poMatch = po.po_number?.toLowerCase().includes(lower);
+
+      const vendorMatch = po.vendor_id?.name?.toLowerCase().includes(lower);
+
+      const itemMatch = po.items?.some((item) => {
+        const name = item.item_id?.name?.toLowerCase() || "";
+        const code = item.item_id?.code?.toLowerCase() || "";
+        return name.includes(lower) || code.includes(lower);
+      });
+
+      if (type === "po") return poMatch;
+      if (type === "vendor") return vendorMatch;
+      if (type === "item") return itemMatch;
+
+      return poMatch || vendorMatch || itemMatch; // all
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: { pos },
+  });
+});
+
+exports.vendorAnalytics = catchAsync(async (req, res) => {
+  const pos = await PO.find({ is_deleted: false }).populate(
+    "vendor_id",
+    "name"
+  );
+
+  const vendorMap = {};
+
+  pos.forEach((po) => {
+    const vendorId = po.vendor_id?._id?.toString();
+    if (!vendorId) return;
+
+    if (!vendorMap[vendorId]) {
+      vendorMap[vendorId] = {
+        vendor: po.vendor_id,
+        totalPOs: 0,
+        completedPOs: 0,
+        onTime: 0,
+        late: 0,
+        qcPassed: 0,
+        qcFailed: 0,
+        totalLeadTime: 0,
+        totalItems: 0,
+        receivedItems: 0,
+      };
+    }
+
+    const v = vendorMap[vendorId];
+
+    v.totalPOs++;
+
+    if (po.status === "completed") {
+      v.completedPOs++;
+
+      // 🕒 On-time vs late
+      if (
+        po.actual_delivery_date &&
+        po.expected_delivery_date &&
+        po.actual_delivery_date <= po.expected_delivery_date
+      ) {
+        v.onTime++;
+      } else {
+        v.late++;
+      }
+
+      // ⚡ Lead time
+      if (po.lead_time_days) {
+        v.totalLeadTime += po.lead_time_days;
+      }
+    }
+
+    // ✅ QC
+    if (po.is_accepted === true) v.qcPassed++;
+    if (po.is_accepted === false) v.qcFailed++;
+
+    // 📦 Fulfillment
+    po.items.forEach((item) => {
+      v.totalItems += item.quantity;
+      v.receivedItems += item.received_quantity;
+    });
+  });
+
+  // 🎯 Final metrics
+  const result = Object.values(vendorMap).map((v) => {
+    const onTimeRate = v.completedPOs ? (v.onTime / v.completedPOs) * 100 : 0;
+
+    const qcRate = v.totalPOs ? (v.qcPassed / v.totalPOs) * 100 : 0;
+
+    const fulfillmentRate = v.totalItems
+      ? (v.receivedItems / v.totalItems) * 100
+      : 0;
+
+    const avgLeadTime = v.completedPOs ? v.totalLeadTime / v.completedPOs : 0;
+
+    // 🧠 FINAL SCORE (custom weight)
+    const score =
+      onTimeRate * 0.3 +
+      qcRate * 0.3 +
+      fulfillmentRate * 0.2 +
+      (100 - avgLeadTime) * 0.2;
+
+    return {
+      ...v,
+      onTimeRate,
+      qcRate,
+      fulfillmentRate,
+      avgLeadTime,
+      score: Math.round(score),
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    data: { vendors: result },
   });
 });

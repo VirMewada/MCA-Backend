@@ -141,6 +141,9 @@ router.get("/verification", verificationController.index);
 router.patch("/verificationStatus", verificationController.update);
 
 //PO
+router.get("/po/search", POController.search);
+router.get("/po/analytics", POController.vendorAnalytics);
+
 router.post("/po", POController.create);
 router.get("/po", POController.index);
 router.get("/po/:id", POController.show);

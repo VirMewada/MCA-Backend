@@ -5202,10 +5202,10 @@ node-clover@^0.0.5:
     request "^2.88.0"
     superagent "^5.0.5"
 
-node-cron@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.npmjs.org/node-cron/-/node-cron-3.0.2.tgz"
-  integrity sha512-iP8l0yGlNpE0e6q1o185yOApANRe47UPbLf4YxfbiNHt/RU5eBcGB/e0oudruheSf+LQeDMezqC5BVAb5wwRcQ==
+node-cron@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.npmjs.org/node-cron/-/node-cron-3.0.3.tgz"
+  integrity sha512-dOal67//nohNgYWb+nWmg5dkFdIwDm8EpeGYMekPMrngV3637lqnX0lbUcCtgibHTz6SEz7DAIjKvKDFYCnO1A==
   dependencies:
     uuid "8.3.2"
 

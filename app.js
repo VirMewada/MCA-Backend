@@ -4,6 +4,7 @@ const globalErrorHandler = require("./Controllers/errorControllers");
 const { unhandledRoutes } = require("./Utils/unSpecifedRouteHandler");
 const setupRoutesV1 = require("./Routes/routes");
 const indexRoutes = require("./Routes/indexRoutes");
+require("./cron/analyticsCron");
 
 const app = express();
 

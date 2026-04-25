@@ -2,6 +2,7 @@ const Item = require("../Models/itemModel");
 const Vendor = require("../Models/vendorModel");
 const Transaction = require("../Models/transactionModel");
 const catchAsync = require("../Utils/catchAsync");
+const { runAnalyticsForAllItems } = require("../cron/analyticsService");
 
 //////////////////////////////////////////////////
 // 🔍 Find Single Item (with children populated)
@@ -454,6 +455,7 @@ exports.transaction = async (req, res) => {
 
 exports.getPeople = async (req, res) => {
   console.log("Fetching people from transactions");
+  await runAnalyticsForAllItems();
 
   try {
     const people = await Transaction.distinct("person_name");
