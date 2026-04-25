@@ -36,7 +36,7 @@ app.use((req, res, next) => {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "connect-src 'self' https://orkestio.com", // needed for API calls
+      "connect-src *",
       "script-src 'self'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://app-media.s3.ap-southeast-1.wasabisys.com",
