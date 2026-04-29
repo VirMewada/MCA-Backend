@@ -20,6 +20,7 @@ const partController = require("../Controllers/partController.js");
 const itemController = require("../Controllers/itemController.js");
 const vendorController = require("../Controllers/vendorController.js");
 const POController = require("../Controllers/POController.js");
+const categoryController = require("../Controllers/categoryController.js");
 
 const { generateSignedUrl } = require("../Utils/wasabiHelper.js");
 
@@ -151,6 +152,14 @@ router.put("/po/:id", POController.update);
 router.patch("/po/:id/status", POController.updateStatus);
 router.delete("/po/:id", POController.remove);
 router.patch("/po/:id/movement", POController.addMovement);
+
+router.get("/categories", categoryController.index);
+router.get("/categories/tree", categoryController.tree);
+router.get("/categories/:id", categoryController.find);
+
+router.post("/categories", categoryController.store);
+router.patch("/categories/:id", categoryController.update);
+router.delete("/categories/:id", categoryController.delete);
 
 // router.post(
 //   "/userImageEmbedding",

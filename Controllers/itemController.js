@@ -3,6 +3,7 @@ const Vendor = require("../Models/vendorModel");
 const Transaction = require("../Models/transactionModel");
 const catchAsync = require("../Utils/catchAsync");
 const { runAnalyticsForAllItems } = require("../cron/analyticsService");
+const Category = require("../Models/CategoryModel");
 
 //////////////////////////////////////////////////
 // 🔍 Find Single Item (with children populated)
@@ -11,7 +12,9 @@ exports.find = catchAsync(async (req, res, next) => {
   const item = await Item.findOne({
     _id: req.params.id,
     is_deleted: false,
-  }).populate("children.item_id");
+  })
+    .populate("children.item_id")
+    .populate("category");
 
   res.status(200).json({
     status: 200,
@@ -24,19 +27,19 @@ exports.find = catchAsync(async (req, res, next) => {
 //////////////////////////////////////////////////
 // 📦 Get All Items (filter + search + type)
 //////////////////////////////////////////////////
+
 exports.index = catchAsync(async (req, res, next) => {
   console.log("Query Params:", req.query);
 
   let query = { is_deleted: false };
 
-  // 🔹 Filter by type (part / assembly / main)
+  // 🔹 TYPE FILTER
   if (req.query.type) {
     const types = req.query.type.split(",").map((t) => t.trim());
-
     query.type = { $in: types };
   }
 
-  // 🔹 Search by name or code
+  // 🔹 SEARCH FILTER
   if (req.query.search) {
     query.$or = [
       { name: { $regex: req.query.search, $options: "i" } },
@@ -44,8 +47,36 @@ exports.index = catchAsync(async (req, res, next) => {
     ];
   }
 
-  // const items = await Item.find(query).sort({ createdAt: -1 });
+  // 🔥 CATEGORY FILTER (NEW)
+  if (req.query.category) {
+    const categoryId = req.query.category;
+
+    // 👉 Step 1: Get selected category
+    const selectedCategory = await Category.findById(categoryId);
+
+    if (selectedCategory) {
+      // 👉 Step 2: Find all matching categories using full_path
+      const matchingCategories = await Category.find({
+        full_path: {
+          $regex: `^${selectedCategory.full_path}`, // starts with path
+          $options: "i",
+        },
+        is_deleted: false,
+      }).select("_id");
+
+      const categoryIds = matchingCategories.map((c) => c._id);
+
+      // 👉 Step 3: Apply filter
+      query.category = { $in: categoryIds };
+    }
+  }
+
+  // 🔹 FETCH ITEMS
   const items = await Item.find(query)
+    .populate({
+      path: "category",
+      select: "name full_path level",
+    })
     .populate({
       path: "children.item_id",
       select: "name type costing",

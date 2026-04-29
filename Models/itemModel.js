@@ -15,6 +15,11 @@ const ItemSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      index: true,
+    },
 
     type: {
       type: String,
