@@ -19,6 +19,12 @@ const POSchema = new mongoose.Schema(
           required: true,
         },
 
+        po_name: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+
         quantity: Number,
 
         // 🔥 Core tracking

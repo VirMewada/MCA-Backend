@@ -45,7 +45,7 @@ exports.create = catchAsync(async (req, res) => {
     return {
       item_id: i.item_id,
       quantity: qty,
-
+      po_name: i.po_name?.trim() || i.item_name || "",
       in_vendor: qty,
       in_house: 0,
       in_machining: 0,
@@ -150,17 +150,35 @@ exports.update = catchAsync(async (req, res) => {
 
   if (items?.length) {
     formattedItems = items.map((i) => {
+      const existing = po.items.find(
+        (p) => p.item_id.toString() === i.item_id.toString()
+      );
+
       const total =
         i.weight && i.weight > 0
           ? i.quantity * i.price * i.weight
           : i.quantity * i.price;
+
       total_amount += total;
 
       return {
         item_id: i.item_id,
+
+        // 🔥 keep po_name
+        po_name: i.po_name || existing?.po_name || "",
+
         quantity: i.quantity,
         price: i.price,
         total,
+
+        // 🔥 PRESERVE tracking fields
+        in_vendor: existing?.in_vendor || 0,
+        in_house: existing?.in_house || 0,
+        in_machining: existing?.in_machining || 0,
+        in_testing: existing?.in_testing || 0,
+        received_quantity: existing?.received_quantity || 0,
+
+        weight: i.weight ?? existing?.weight ?? 0,
       };
     });
   }

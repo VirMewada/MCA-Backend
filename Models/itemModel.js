@@ -8,6 +8,10 @@ const ItemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    po_default_name: {
+      type: String,
+      default: "",
+    },
 
     code: {
       type: String,
@@ -19,6 +23,24 @@ const ItemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       index: true,
+    },
+    full_code: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      immutable: true,
+    },
+
+    item_number: {
+      type: Number,
+      required: true,
+      immutable: true,
+    },
+
+    category_snapshot: {
+      full_path: { type: String, required: true },
+      code: { type: String, required: true },
     },
 
     type: {
@@ -155,5 +177,9 @@ ItemSchema.virtual("total").get(function () {
 
 ItemSchema.set("toJSON", { virtuals: true });
 ItemSchema.set("toObject", { virtuals: true });
+
+ItemSchema.index({ category: 1, item_number: 1 }, { unique: true });
+ItemSchema.index({ "children.item_id": 1 });
+ItemSchema.index({ is_deleted: 1 });
 
 module.exports = mongoose.model("Item", ItemSchema);

@@ -11,7 +11,11 @@ exports.find = catchAsync(async (req, res, next) => {
     is_deleted: false,
   }).populate({
     path: "items.item_id",
-    select: "name code type unit costing.weight",
+    select: "name code po_default_name type unit costing.weight category",
+    populate: {
+      path: "category",
+      select: "full_path name code",
+    },
   });
 
   res.status(200).json({

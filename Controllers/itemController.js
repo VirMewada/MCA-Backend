@@ -98,20 +98,28 @@ exports.index = catchAsync(async (req, res, next) => {
 //////////////////////////////////////////////////
 // ➕ Create Item (Part / Assembly / Main)
 //////////////////////////////////////////////////
+
 exports.store = catchAsync(async (req, res, next) => {
   const body = JSON.parse(JSON.stringify(req.body));
 
-  const item = await Item.create(body);
+  const category = await Category.findById(body.category);
 
-  // ✅ ADD THIS
-  if (item.type === "part") {
-    const cost =
-      (item.costing?.weight || 0) * (item.costing?.rate || 0) +
-      (item.costing?.labour || 0);
-    console.log("store called, calculated cost:", cost);
-    item.costing.latest_cost = cost;
-    await item.save();
+  if (!category) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid category",
+    });
   }
+
+  // 🔹 Build derived fields
+  body.full_code = `${category.code}/${body.item_number}`;
+
+  body.category_snapshot = {
+    full_path: category.full_path,
+    code: category.code,
+  };
+
+  const item = await Item.create(body);
 
   res.status(200).json({
     success: true,
@@ -125,11 +133,17 @@ exports.store = catchAsync(async (req, res, next) => {
 exports.update = catchAsync(async (req, res, next) => {
   const body = JSON.parse(JSON.stringify(req.body));
 
+  // ❗ BLOCK identity changes
+  delete body.category;
+  delete body.item_number;
+  delete body.full_code;
+  delete body.category_snapshot;
+
   if ("code" in req.body) {
     body.code = req.body.code || "";
   }
 
-  // 🔥 FIX: handle costing separately
+  // 🔥 costing logic (keep as is)
   if (body.costing) {
     const { weight, rate, labour } = body.costing;
 
@@ -140,7 +154,7 @@ exports.update = catchAsync(async (req, res, next) => {
     body["costing.labour"] = labour;
     body["costing.latest_cost"] = latest_cost;
 
-    delete body.costing; // ❗ important
+    delete body.costing;
   }
 
   const item = await Item.findByIdAndUpdate(
