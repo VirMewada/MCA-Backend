@@ -23,6 +23,7 @@ const POController = require("../Controllers/POController.js");
 const categoryController = require("../Controllers/categoryController.js");
 
 const { generateSignedUrl } = require("../Utils/wasabiHelper.js");
+const { runAnalyticsForAllItems } = require("../cron/analyticsService.js");
 
 const router = express.Router();
 
@@ -90,6 +91,19 @@ router.use(authController.protect);
 // router.post("/applicationUpdateStatus", applicationController.updateStatus);
 // router.patch("/application/:id", applicationController.update);
 // router.delete("/application/:id?", applicationController.delete);
+
+router.post("/run-analytics", async (req, res) => {
+  try {
+    console.log("🔘 Manual analytics trigger");
+
+    await runAnalyticsForAllItems();
+
+    res.status(200).json({ message: "Analytics executed successfully" });
+  } catch (err) {
+    console.error("❌ Manual analytics failed:", err);
+    res.status(500).json({ message: "Failed to run analytics" });
+  }
+});
 
 router.get("/company/:companyName", companyController.find);
 router.get("/company/all/:companyName", companyController.findAll);
