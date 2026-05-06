@@ -346,7 +346,7 @@ exports.updateStatus = catchAsync(async (req, res) => {
     const diff =
       (po.actual_delivery_date - po.createdAt) / (1000 * 60 * 60 * 24);
 
-    po.lead_time_days = Math.round(diff);
+    po.lead_time_days = Number(diff.toFixed(2));
   }
 
   // ============================
@@ -537,20 +537,30 @@ exports.vendorAnalytics = catchAsync(async (req, res) => {
     if (po.status === "completed") {
       v.completedPOs++;
 
-      // 🕒 On-time vs late
-      if (
-        po.actual_delivery_date &&
-        po.expected_delivery_date &&
-        po.actual_delivery_date <= po.expected_delivery_date
-      ) {
-        v.onTime++;
-      } else {
-        v.late++;
+      let leadTime = null;
+
+      // 🔥 ALWAYS calculate from timestamps (SOURCE OF TRUTH)
+      if (po.actual_delivery_date && po.createdAt) {
+        leadTime =
+          (po.actual_delivery_date - po.createdAt) / (1000 * 60 * 60 * 24);
       }
 
-      // ⚡ Lead time
-      if (po.lead_time_days) {
-        v.totalLeadTime += po.lead_time_days;
+      // 🔥 Track lead time properly
+      if (leadTime !== null) {
+        v.totalLeadTime += leadTime;
+        v.leadTimeCount = (v.leadTimeCount || 0) + 1;
+      }
+
+      // 🕒 On-time logic
+      if (leadTime !== null) {
+        if (po.expected_delivery_date) {
+          if (po.actual_delivery_date <= po.expected_delivery_date) v.onTime++;
+          else v.late++;
+        } else {
+          // fallback rule (temporary)
+          if (leadTime <= 1) v.onTime++;
+          else v.late++;
+        }
       }
     }
 
@@ -569,20 +579,21 @@ exports.vendorAnalytics = catchAsync(async (req, res) => {
   const result = Object.values(vendorMap).map((v) => {
     const onTimeRate = v.completedPOs ? (v.onTime / v.completedPOs) * 100 : 0;
 
-    const qcRate = v.totalPOs ? (v.qcPassed / v.totalPOs) * 100 : 0;
+    // const qcRate = v.totalPOs ? (v.qcPassed / v.totalPOs) * 100 : 0;
+    const qcTotal = v.qcPassed + v.qcFailed;
+    const qcRate = qcTotal ? (v.qcPassed / qcTotal) * 100 : 0;
 
     const fulfillmentRate = v.totalItems
       ? (v.receivedItems / v.totalItems) * 100
       : 0;
 
-    const avgLeadTime = v.completedPOs ? v.totalLeadTime / v.completedPOs : 0;
+    const avgLeadTime = v.leadTimeCount ? v.totalLeadTime / v.leadTimeCount : 0;
+
+    const leadScore = avgLeadTime ? Math.max(0, 100 - avgLeadTime * 10) : 100;
 
     // 🧠 FINAL SCORE (custom weight)
     const score =
-      onTimeRate * 0.3 +
-      qcRate * 0.3 +
-      fulfillmentRate * 0.2 +
-      (100 - avgLeadTime) * 0.2;
+      onTimeRate * 0.3 + qcRate * 0.3 + fulfillmentRate * 0.2 + leadScore * 0.2;
 
     return {
       ...v,
