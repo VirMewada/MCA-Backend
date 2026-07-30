@@ -65,7 +65,7 @@ exports.store = catchAsync(async (req, res, next) => {
 
   const vendor = await Vendor.create(body);
 
-  // 🔥 Sync items → Item collection
+  // Sync items -> Item collection
   if (body.items && body.items.length > 0) {
     for (const i of body.items) {
       // update if exists
@@ -74,6 +74,7 @@ exports.store = catchAsync(async (req, res, next) => {
         {
           $set: {
             "vendors.$.last_price": i.last_price,
+            "vendors.$.lead_time_days": i.lead_time_days,
           },
         }
       );
@@ -86,6 +87,7 @@ exports.store = catchAsync(async (req, res, next) => {
             vendors: {
               vendor_id: vendor._id,
               last_price: i.last_price,
+              lead_time_days: i.lead_time_days,
             },
           },
         }
@@ -117,7 +119,7 @@ exports.update = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true }
   );
 
-  // 🔥 Sync items → Item collection
+  // Sync items -> Item collection
   if (body.items && body.items.length > 0) {
     for (const i of body.items) {
       await Item.updateOne(
@@ -125,6 +127,7 @@ exports.update = catchAsync(async (req, res, next) => {
         {
           $set: {
             "vendors.$.last_price": i.last_price,
+            "vendors.$.lead_time_days": i.lead_time_days,
           },
         }
       );
@@ -136,6 +139,7 @@ exports.update = catchAsync(async (req, res, next) => {
             vendors: {
               vendor_id: vendor._id,
               last_price: i.last_price,
+              lead_time_days: i.lead_time_days,
             },
           },
         }
@@ -246,7 +250,7 @@ exports.search = catchAsync(async (req, res, next) => {
 // 🔗 Map Vendor to Item
 //////////////////////////////////////////////////
 exports.mapVendorToItem = catchAsync(async (req, res, next) => {
-  const { vendor_id, item_id, last_price } = req.body;
+  const { vendor_id, item_id, last_price, lead_time_days } = req.body;
 
   if (!vendor_id || !item_id) {
     return res.status(400).json({
@@ -255,17 +259,18 @@ exports.mapVendorToItem = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 🔹 Update if exists
+  // Update if exists
   await Item.updateOne(
     { _id: item_id, "vendors.vendor_id": vendor_id },
     {
       $set: {
         "vendors.$.last_price": last_price,
+        "vendors.$.lead_time_days": lead_time_days,
       },
     }
   );
 
-  // 🔹 Insert if not exists
+  // Insert if not exists
   await Item.updateOne(
     { _id: item_id, "vendors.vendor_id": { $ne: vendor_id } },
     {
@@ -273,17 +278,19 @@ exports.mapVendorToItem = catchAsync(async (req, res, next) => {
         vendors: {
           vendor_id,
           last_price,
+          lead_time_days,
         },
       },
     }
   );
 
-  // 🔹 Vendor side sync
+  // Vendor side sync
   await Vendor.updateOne(
     { _id: vendor_id, "items.item_id": item_id },
     {
       $set: {
         "items.$.last_price": last_price,
+        "items.$.lead_time_days": lead_time_days,
       },
     }
   );
@@ -295,6 +302,7 @@ exports.mapVendorToItem = catchAsync(async (req, res, next) => {
         items: {
           item_id,
           last_price,
+          lead_time_days,
         },
       },
     }
@@ -310,13 +318,14 @@ exports.mapVendorToItem = catchAsync(async (req, res, next) => {
 // 🔄 Update Vendor-Item Relation
 //////////////////////////////////////////////////
 exports.updateVendorItem = catchAsync(async (req, res, next) => {
-  const { vendor_id, item_id, last_price } = req.body;
+  const { vendor_id, item_id, last_price, lead_time_days } = req.body;
 
   await Item.updateOne(
     { _id: item_id, "vendors.vendor_id": vendor_id },
     {
       $set: {
         "vendors.$.last_price": last_price,
+        "vendors.$.lead_time_days": lead_time_days,
       },
     }
   );
@@ -326,6 +335,7 @@ exports.updateVendorItem = catchAsync(async (req, res, next) => {
     {
       $set: {
         "items.$.last_price": last_price,
+        "items.$.lead_time_days": lead_time_days,
       },
     }
   );

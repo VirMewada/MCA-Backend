@@ -8,42 +8,6 @@ require("./cron/analyticsCron");
 
 const app = express();
 
-// CSP headers
-// app.use((req, res, next) => {
-//   res.setHeader(
-//     "Content-Security-Policy",
-//     "default-src 'self'; connect-src *; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-//   );
-//   next();
-// });
-
-// app.use((req, res, next) => {
-//   res.setHeader(
-//     "Content-Security-Policy",
-//     [
-//       "default-src 'self'",
-//       "connect-src *",
-//       "script-src 'self'",
-//       "style-src 'self' 'unsafe-inline'",
-//       "img-src 'self' data: blob: https://app-media.s3.ap-southeast-1.wasabisys.com",
-//     ].join("; ")
-//   );
-//   next();
-// });
-
-// app.use((req, res, next) => {
-//   res.setHeader(
-//     "Content-Security-Policy",
-//     [
-//       "default-src 'self'",
-//       "connect-src *",
-//       "script-src 'self'",
-//       "style-src 'self' 'unsafe-inline'",
-//       "img-src 'self' data: blob: https://app-media.s3.ap-southeast-1.wasabisys.com",
-//     ].join("; ")
-//   );
-//   next();
-// });
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
@@ -88,15 +52,6 @@ app.get("*", (req, res, next) => {
   }
 });
 
-// app.get("*", (req, res) => {
-//   if (!req.path.startsWith("/api")) {
-//     res.sendFile(path.resolve(reactBuildPath, "index.html"));
-//   } else {
-//     return unhandledRoutes()(req, res, req.next);
-//   }
-// });
-
-// app.use("/", (_, res) => res.json({ success: true }));
 // // Handling unhandled routes:
 app.all("*", unhandledRoutes());
 // Error handler middlware

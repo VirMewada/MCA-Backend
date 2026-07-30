@@ -8,17 +8,18 @@ module.exports = class Email {
     this.firstName = user.name;
 
     this.url = url;
-    this.from = `orkéstio <${process.env.GMAILUSER}>`;
+    this.from = `Prima Pumps <${process.env.EMAILUSER}>`;
   }
 
   newTransport() {
     // Send Grid
     return nodemailer.createTransport({
-      service: "gmail",
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.GMAILUSER,
-
-        pass: process.env.GMAILPASS,
+        user: process.env.EMAILUSER,
+        pass: process.env.EMAILPASS,
       },
     });
   }
@@ -38,7 +39,7 @@ module.exports = class Email {
   }
   async sendWelcome(a) {
     console.log("sending mail...");
-    await this.send(`Your OTP is: ${a}`, `Email Verification For Orkéstio`);
+    await this.send(`Your OTP is: ${a}`, `Email Verification For Prima Pumps`);
   }
 
   async sendPasswordReset(a) {

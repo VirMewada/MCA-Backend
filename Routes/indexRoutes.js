@@ -1,26 +1,21 @@
 const express = require("express");
-const reviewController = require("../Controllers/reviewController.js");
 const authController = require("../Controllers/authControllers");
-const applicationController = require("../Controllers/applicationController.js");
-const gigController = require("../Controllers/gigController.js");
-const roleController = require("../Controllers/roleController.js");
 const { query, getQueryDoc, getPostman } = require("../txQuery");
-const CollaborationRequestController = require("../Controllers/collaboratinController.js");
-const messageController = require("../Controllers/messageController");
-const teamController = require("../Controllers/teamController.js");
 const NotificationController = require("../Controllers/notificationController.js");
-const savedDatabaseController = require("../Controllers/savedDatabaseController.js");
 const pushTokenController = require("../Controllers/pushTokenController.js");
-// const _3 = require("../Utils/matchers");
-// const _4 = require("../Utils/postprocessors");
 const verificationController = require("../Controllers/verificationController.js");
-const userImageEmbeddingController = require("../Controllers/userImageEmbeddingController.js");
 const companyController = require("../Controllers/companyController.js");
 const partController = require("../Controllers/partController.js");
 const itemController = require("../Controllers/itemController.js");
 const vendorController = require("../Controllers/vendorController.js");
 const POController = require("../Controllers/POController.js");
 const categoryController = require("../Controllers/categoryController.js");
+const buildController = require("../Controllers/buildController.js");
+const partyController = require("../Controllers/partyController.js");
+const salesOrderController = require("../Controllers/salesOrderController.js");
+const workerController = require("../Controllers/workerController.js");
+const departmentController = require("../Controllers/departmentController.js");
+const pipelineController = require("../Controllers/pipelineController.js");
 
 const { generateSignedUrl } = require("../Utils/wasabiHelper.js");
 const { runAnalyticsForAllItems } = require("../cron/analyticsService.js");
@@ -84,14 +79,6 @@ router.get("/media/:key(*)", async (req, res, next) => {
 // Protect all routes after this middleware
 router.use(authController.protect);
 
-// router.get("/application", applicationController.index);
-// router.get("/application/:id/:status", applicationController.find);
-// router.get("/applicationExists/:id", applicationController.exists);
-// router.post("/application", applicationController.store);
-// router.post("/applicationUpdateStatus", applicationController.updateStatus);
-// router.patch("/application/:id", applicationController.update);
-// router.delete("/application/:id?", applicationController.delete);
-
 router.post("/run-analytics", async (req, res) => {
   try {
     console.log("🔘 Manual analytics trigger");
@@ -137,6 +124,66 @@ router.get("/items/:id/bom", itemController.getBOM);
 // 🔹 Costing
 router.post("/items/:id/recalculate-cost", itemController.recalculateCost);
 
+// 🔹 Manufacturing
+//   GET  /items/:id/buildable  → how many can we make right now
+//   POST /items/:id/build      → consume the BOM, produce the parent
+router.get("/items/:id/buildable", buildController.buildable);
+router.post("/items/:id/build", buildController.build);
+
+router.get("/builds", buildController.index);
+router.get("/builds/:id", buildController.show);
+router.post("/builds/:id/reverse", buildController.reverseBuild);
+
+// 🔹 Parties (customers we sell to)
+router.get("/parties", partyController.index);
+router.get("/parties/:id", partyController.find);
+router.post("/parties", partyController.store);
+router.patch("/parties/:id", partyController.update);
+router.delete("/parties/:id", partyController.delete);
+
+// 🔹 Sales orders
+// The static /feasibility route must be declared before /:id, or Express
+// matches "feasibility" as an order id.
+router.post("/sales-orders/feasibility", salesOrderController.previewFeasibility);
+
+router.get("/sales-orders", salesOrderController.index);
+router.post("/sales-orders", salesOrderController.store);
+router.get("/sales-orders/:id", salesOrderController.find);
+router.patch("/sales-orders/:id", salesOrderController.update);
+router.delete("/sales-orders/:id", salesOrderController.remove);
+router.patch("/sales-orders/:id/status", salesOrderController.updateStatus);
+router.post("/sales-orders/:id/dispatch", salesOrderController.dispatch);
+router.get("/sales-orders/:id/feasibility", salesOrderController.feasibility);
+
+// 🔹 Workers (shop floor) and the skill catalogue
+// Static paths first — otherwise "skill-matrix" is matched as a worker id.
+router.get("/worker-skills", workerController.catalogue);
+router.get("/workers/skill-matrix", workerController.skillMatrix);
+
+router.get("/workers", workerController.index);
+router.post("/workers", workerController.store);
+router.get("/workers/:id", workerController.find);
+router.patch("/workers/:id", workerController.update);
+router.delete("/workers/:id", workerController.delete);
+
+// 🔹 Departments — the building blocks of a pipeline
+router.get("/departments", departmentController.index);
+router.post("/departments", departmentController.store);
+router.get("/departments/:id", departmentController.find);
+router.patch("/departments/:id", departmentController.update);
+router.delete("/departments/:id", departmentController.delete);
+
+// 🔹 Pipelines (routing templates)
+// Static path before /:id, or "validate" is read as a pipeline id.
+router.post("/pipelines/validate", pipelineController.validate);
+
+router.get("/pipelines", pipelineController.index);
+router.post("/pipelines", pipelineController.store);
+router.get("/pipelines/:id", pipelineController.find);
+router.patch("/pipelines/:id", pipelineController.update);
+router.delete("/pipelines/:id", pipelineController.delete);
+router.patch("/pipelines/:id/items", pipelineController.setItems);
+
 // 🔹 Mapping (Vendor ↔ Item)
 router.get("/vendors/search", vendorController.search);
 
@@ -158,6 +205,9 @@ router.patch("/verificationStatus", verificationController.update);
 //PO
 router.get("/po/search", POController.search);
 router.get("/po/analytics", POController.vendorAnalytics);
+router.post("/po/:id/send-to-job", POController.sendToJob);
+router.patch("/po/:id/write-off", POController.writeOffItem);
+router.post("/po/:id/reject-to-origin", POController.rejectToOrigin);
 
 router.post("/po", POController.create);
 router.get("/po", POController.index);
@@ -175,43 +225,6 @@ router.post("/categories", categoryController.store);
 router.patch("/categories/:id", categoryController.update);
 router.delete("/categories/:id", categoryController.delete);
 
-// router.post(
-//   "/userImageEmbedding",
-//   userImageEmbeddingController.getSimilarUsersFromReferenceImage
-// );
-
-// router.get("/gig", gigController.index);
-// router.get("/gigActive", gigController.gigActive);
-// router.get("/gig/:id", gigController.find);
-// router.post("/gig", gigController.store);
-// router.patch("/gig/:id", gigController.update);
-// router.delete("/gig/:id?", gigController.delete);
-
-// router.get("/savedDatabase", savedDatabaseController.index); //
-// router.get("/gigActive", savedDatabaseController.gigActive);
-// router.get("/savedDatabase/:id", savedDatabaseController.find);
-// router.post("/savedDatabase", savedDatabaseController.store); //
-// router.patch("/savedDatabase/:id", savedDatabaseController.update); //
-// router.delete("/savedDatabase/:id?", savedDatabaseController.delete);
-
-// router.get("/role", roleController.index);
-// router.get("/role/:id", roleController.find);
-// router.post("/role", roleController.store);
-// router.patch("/role/:id", roleController.update);
-// router.delete("/role/:id?", roleController.delete);
-
-// router.get("/collaborationRequest", CollaborationRequestController.index);
-// router.get("/collaborationRequest/:id", CollaborationRequestController.find);
-// router.post("/collaborationRequest", CollaborationRequestController.store);
-// router.patch(
-//   "/collaborationRequest/:id",
-//   CollaborationRequestController.update
-// );
-// router.delete(
-//   "/collaborationRequest/:id?",
-//   CollaborationRequestController.delete
-// );
-
 router.get("/notification", NotificationController.index);
 router.get("/notification/:id", NotificationController.find);
 router.post("/notification", NotificationController.store);
@@ -222,16 +235,5 @@ router.delete("/notification/:id?", NotificationController.delete);
 
 router.post("/pushToken", pushTokenController.store);
 router.get("/pushToken", pushTokenController.index);
-
-// router.post("/messages", messageController.sendMessage);
-// router.post("/createChat", messageController.createChat);
-// router.post("/createChatGeneral", messageController.createChatGeneral);
-// router.get("/messages/:chatId", messageController.getChat);
-// router.get("/messagesUsers/:userId", messageController.getUserChats);
-// router.patch("/messagesUsers/:chatId", messageController.updateUserChats);
-// router.get("/chatMessages/:chatId", messageController.getChatMessages);
-// router.patch("/messages/:chatId", messageController.addParticipant);
-
-// router.get("/teams/:userId", teamController.find);
 
 module.exports = router;
